@@ -7,18 +7,27 @@ from app.models.message import Message
 class ConversationRepository:
     
     def get_all(self):
-        """Retrieves all conversation.
+        """Retrieves all conversations.
         
         :returns: List[Conversation]
         """
         return db.session.execute(db.select(Conversation)).scalars().all()
+    
+    def get_by_user_id(self, user_id):
+        """Retrieves all conversations for user
+        
+        :returns: List[Conversation]
+        """
+        user = db.session.get(User, user_id)
+        
+        return user.conversations
 
     def get_by_id(self, conversation_id):
         """Retrieves a single conversation by its ID.
         
         :returns: Conversation
         """
-        return db.get_or_404(Conversation, conversation_id)
+        return db.session.get(Conversation, conversation_id)
     
 
     def create(self, chat_name, initial_user_id):
@@ -42,10 +51,13 @@ class ConversationRepository:
     def add_user(self, conversation_id, user_id):
         """Adds a user to a conversation.
         
-        :returns: Boolean
+        :returns: Conversation
         """
         conversation = self.get_by_id(conversation_id)
         user = db.session.get(User, user_id)
+
+        if not conversation:
+            raise ValueError("Conversation does not exist!")
 
         if not user:
             raise ValueError("User does not exist!")
@@ -53,8 +65,8 @@ class ConversationRepository:
         if user not in conversation.users:
             conversation.users.append(user)
             db.session.commit()
-            return True
-        return False
+            return conversation
+        return None
     
     def get_users(self, conversation_id):
         """Fetches all users for conversation.
@@ -62,6 +74,9 @@ class ConversationRepository:
         :returns: List[User]
         """
         conversation = self.get_by_id(conversation_id)
+
+        if not conversation:
+            raise ValueError("Conversation does not exist!")
         
         return conversation.users
 
@@ -71,6 +86,9 @@ class ConversationRepository:
         :returns: Boolean
         """
         conversation = self.get_by_id(conversation_id)
+
+        if not conversation:
+            raise ValueError("Conversation does not exist!")
 
         db.session.delete(conversation)
         db.session.commit()
@@ -88,6 +106,9 @@ class ConversationRepository:
         conversation = self.get_by_id(conversation_id)
         sender = db.session.get(User, sender_id)
 
+        if not conversation:
+            raise ValueError("Conversation does not exist!")
+
         if not sender:
             raise ValueError("User does not exist!")
 
@@ -100,7 +121,7 @@ class ConversationRepository:
         db.session.commit()
         return new_message
     
-    def get_message_slice(self, conversation_id, offset, limit):
+    def get_message_slice(self, conversation_id, limit, offset):
         """Fetches paginated slice of date ordered messages from a conversation.
         
         :returns: List[Message]

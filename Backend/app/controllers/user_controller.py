@@ -2,7 +2,9 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, set_access_cookies, decode_token
 from app.services.user_service import UserService
 from app.dtos.user_dto import UserDTO
-from flask_socketio import join_room, leave_room
+from flask_socketio import join_room, leave_room, disconnect, emit
+from app.controllers import connected_users, connected_sessions
+import jwt
 
 
 class UserController:
@@ -14,7 +16,7 @@ class UserController:
         self._register_events()
 
     def _register_routes(self):
-        """Contains endpoints for user authentication and profile management"""
+        """Contains endpoints for user authentication and profile management using HTTP"""
 
         @self.blueprint.route("/register", methods=["POST"])
         def register_user():
@@ -49,18 +51,24 @@ class UserController:
             responses:
                 201:
                     description: User created successfully
-                401:
-                    description: User creation failed (e.g., email taken)
+                400:
+                    description: User creation failed (e.g., email/username taken)
+                500:
+                    description: Internal server error
             """
             data = request.get_json(silent=True) or {}
             username = data.get("username")
             email = data.get("email")
             password = data.get("password")
 
-            if not self.service.register_user(username, email, password):
-                return jsonify({"message": "User creation failed"}), 401
+            try:
+                self.service.register_user(username, email, password)
 
-            return jsonify({"message": "User created successfully"}), 201
+                return jsonify({"message": "User created successfully"}), 201
+            except ValueError as e:
+                return jsonify({"error": str(e)}), 400
+            except Exception as e:
+                return jsonify({"error": "Internal server error"}), 500
 
         @self.blueprint.route("/login", methods=["POST"])
         def login_user():
@@ -113,14 +121,6 @@ class UserController:
             response = jsonify({"message": "Login successful", "token": token})
 
             set_access_cookies(response, token)
-
-            # response.set_cookie(
-            #     key="auth_token",
-            #     value=token,
-            #     httponly=True,
-            #     samesite="Strict",
-            #     secure=False  # TODO Set to TRUE for HTTPS
-            # )
 
             return response, 200
 
@@ -192,23 +192,35 @@ class UserController:
         
 
     def _register_events(self):
-        """Will contain websocket endpoints for connect/disconnect"""
+        """Contains endpoints for user authentication and profile management using Websockets"""
         @self.socketio.on("connect")
         def handle_connect():
-            # will use decode_token from jwt_extended to check
-            # token = auth.get('token')
-            # if not token:
-            #     return disconnect()
+            """Client connects via websocket"""
+            try:
+                token = request.cookies.get("access_token_cookie") or request.args.get("access_token_cookie")
+                if not token:
+                    emit("auth_error", {"message": "No JWT token provided"})
+                    return disconnect()
+                
+                decoded = decode_token(token)
+                user_id = decoded.get("sub")
+                if not user_id:
+                    emit("auth_error", {"message": "Invalid token: missing user ID"})
+                    return disconnect()
 
-            # try:
-            #     decoded = decode_token(token)
-            #     user_id = decoded['sub']  # this is the identity you set
-            #     print(f"User {user_id} connected!")
-            # except Exception as e:
-            #     print("Invalid token:", e)
-            #     return disconnect()
-            pass
+                # Store connection
+                connected_users[request.sid] = user_id
+                connected_sessions[user_id] = request.sid
+
+            except jwt.ExpiredSignatureError:
+                emit("auth_error", {"message": "Token expired"})
+                return disconnect()
+            except Exception as e:
+                emit("auth_error", {"message": f"Invalid token: {e}"})
+                return disconnect()
 
         @self.socketio.on("disconnect")
         def handle_disconnect():
-            pass
+            """Client disconnects from websocket"""
+            user_id = connected_users.pop(request.sid, None)
+            session_id = connected_sessions.pop(user_id, None)

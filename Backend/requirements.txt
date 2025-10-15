@@ -7,3 +7,4 @@ Flask-Migrate
 flask-socketio
 bcrypt
 flask-jwt-extended
+eventlet

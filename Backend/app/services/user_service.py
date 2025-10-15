@@ -16,14 +16,17 @@ class UserService:
         
         hashed_pw = hash_password(password)
 
-        if not self.repository.add(email=email, username=username, hashed_password=hashed_pw):
+        if not self.repository.create(email=email, username=username, hashed_password=hashed_pw):
             return False
 
         return True
 
 
-
     def login_user(self, email, password):
+        """Logs user in and creates an access token
+        
+        :returns: str
+        """
         user = self.repository.get_by_email(email)
 
         if user is None:
@@ -34,15 +37,12 @@ class UserService:
             raise ValueError("Invalid password!")
         
         access_token = create_access_token(identity=str(user.id))
-        # refresh_token = create_refresh_token(identity=user.id)
-
-        # return {
-        #     "access_token": access_token,
-        #     "refresh_token": refresh_token
-        # }
-
         return access_token
 
 
     def get_profiles(self, username):
+        """Retrieves 5 profiles contain username
+        
+        :returns: List[User]
+        """
         return self.repository.get_by_username(username, 5)

@@ -1,6 +1,7 @@
 from app.extensions import db
 from app.models.user import User
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 class UserRepository:
     
@@ -16,7 +17,7 @@ class UserRepository:
         
         :returns: User
         """
-        return db.get_or_404(User, user_id)
+        return db.session.get(User, user_id)
     
     def get_by_email(self, email) -> User | None:
         """Retrieves a single user by their email
@@ -52,21 +53,25 @@ class UserRepository:
         db.session.commit() 
         return new_user
 
-    def add(self, email, username, hashed_password):
+    def create(self, email, username, hashed_password):
         """Creates and persists a new user.
         
         :returns: User
         """
-        new_user = User(
-            email=email, 
-            username=username, 
-            password=hashed_password
-        )
-        
-        db.session.add(new_user)
+        try:
+            new_user = User(
+                email=email, 
+                username=username, 
+                password=hashed_password
+            )
+            
+            db.session.add(new_user)
 
-        db.session.commit() 
-        return new_user
+            db.session.commit() 
+            return new_user
+        except IntegrityError as e:
+            db.session.rollback()
+            raise ValueError("Email/Username already in use!")
 
     def update_username(self, user_id, new_username):
         """Updates a user's username.
@@ -74,6 +79,9 @@ class UserRepository:
         :returns: User
         """
         user = self.get_by_id(user_id)
+
+        if not user:
+            raise ValueError("User not found!")
         
         user.username = new_username
         db.session.commit()
@@ -86,6 +94,9 @@ class UserRepository:
         :returns: Boolean
         """
         user = self.get_by_id(user_id)
+
+        if not user:
+            raise ValueError("User not found!")
 
         db.session.delete(user)
         db.session.commit()
