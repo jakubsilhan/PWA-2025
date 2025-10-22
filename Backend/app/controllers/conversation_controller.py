@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.conversation_service import ConversationService
+from app.services.user_service import UserService
 from flask_socketio import emit, join_room, leave_room
 from app.controllers import connected_users, connected_sessions
 from app.dtos.conversation_dto import ConversationDTO
@@ -9,6 +10,7 @@ from app.dtos.message_dto import MessageDTO
 class ConversationController:
     def __init__(self, socketio):
         self.service = ConversationService()
+        self.user_service = UserService()
         self.socketio = socketio
         self.blueprint = Blueprint("conversation", __name__)
         self._register_routes()
@@ -38,9 +40,16 @@ class ConversationController:
             if not user_id:
                 return jsonify({"error": "User ID is required"}), 400
             conversations = self.service.get_conversations(user_id)
-
-            conversations_dto = [ConversationDTO.from_conversation(conversation).__dict__ for conversation in conversations]
-            return jsonify({"profiles": conversations_dto}), 200
+            conversations_dto = list()
+            for conversation in conversations:
+                try:
+                    last_message = self.service.get_messages(conversation.id, 1, 0)[0]
+                    conv_dto = ConversationDTO(conversation.id, conversation.chat_name, last_message.content, last_message.sender.username, last_message.timestamp.isoformat())
+                except IndexError:
+                    conv_dto = ConversationDTO(conversation.id, conversation.chat_name, "", "", "")
+                conversations_dto.append(conv_dto)
+            # conversations_dto = [ConversationDTO.from_conversation(conversation).__dict__ for conversation in conversations]
+            return jsonify({"conversations": conversations_dto}), 200
 
         @self.blueprint.route("/conversations/<int:conversation_id>/messages", methods=["GET"])
         @jwt_required()
@@ -82,6 +91,7 @@ class ConversationController:
             user_id = get_jwt_identity()
 
             if not self.service.is_user_in_conversation(user_id, conversation_id):
+                print(user_id)
                 return jsonify({"error": "Access denied"}), 403
             
             limit = int(request.args.get("limit", 30))
@@ -203,7 +213,11 @@ class ConversationController:
                 participant_ids.append(user_id)
 
             conversation = self.service.create_conversation(chat_name, participant_ids)
-            conversation_dto = ConversationDTO.from_conversation(conversation).__dict__
+            try:
+                last_message = self.service.get_messages(conversation.id, 1, 0)[0]
+                conversation_dto = ConversationDTO(conversation.id, conversation.chat_name, last_message.content, last_message.sender.username, last_message.timestamp.isoformat())
+            except IndexError:
+                conversation_dto = ConversationDTO(conversation.id, conversation.chat_name, "", "", "")
             for participant in participant_ids:
                 sid = connected_sessions.get(participant, None)
                 if sid:

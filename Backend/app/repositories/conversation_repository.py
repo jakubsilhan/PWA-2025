@@ -118,6 +118,7 @@ class ConversationRepository:
         )
 
         conversation.messages.append(new_message)
+        db.session.add(conversation)
         db.session.commit()
         return new_message
     

@@ -71,7 +71,7 @@ class UserRepository:
             return new_user
         except IntegrityError as e:
             db.session.rollback()
-            raise ValueError("Email/Username already in use!")
+            raise ValueError("Username already in use!")
 
     def update_username(self, user_id, new_username):
         """Updates a user's username.

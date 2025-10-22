@@ -1,25 +1,47 @@
+import { io } from 'socket.io-client'
+
 class WebSocketService {
-    constructor() {this.socket = null, this.listeners = new Map();}
+  socket = null
 
-    connect(){
-        const url = import.meta.env.VITE_WS_URL
-        this.socket = new WebSocket(url);
-        this.socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if(this.listeners.has(data.type)){
-                this.listeners.get(data.type).forEach(cb => cb(data.payload))
-            }
-        }
-    }
+  connect() {
+    // Creates a websocket service with specified connection details and connects to it
+    const url = import.meta.env.VITE_WS_URL
+    const path = import.meta.env.VITE_WS_PATH
+    if (!this.socket) {
+      this.socket = io(url, {
+        withCredentials: true,
+        path: path,
+        transports: ['websocket'],
+      })
 
-    send(type, payload){
-        this.socket?.send(JSON.stringify({type, payload}))
+      // Adds logging callbacks for connect/disconnect
+      this.socket.on('connect', () => console.log('WS connected:', this.socket.id))
+      this.socket.on('disconnect', (reason) => console.log('WS disconnected:', reason))
     }
+  }
 
-    subscribe(type, callback) {
-        if(!this.listeners.has(type)) this.listeners.set(type, []);
-        this.listeners.get(type).push(callback);
+  async disconnect() {
+    // Disconnects from current websocket
+    if (this.socket) {
+      console.log('Disconnecting socket...')
+      this.socket.disconnect()
+      await new Promise((r) => setTimeout(r, 100))
+      this.socket = null
     }
+  }
+
+  on(event, clb) {
+    this.socket?.on(event, clb)
+  }
+
+  off(event, clb) {
+    this.socket?.off(event, clb)
+  }
+
+  emit(event, data) {
+    this.socket?.emit(event, data)
+  }
 }
 
-export const wsService = new WebSocketService();
+// Creates a global websocket service
+export const wsService = new WebSocketService()

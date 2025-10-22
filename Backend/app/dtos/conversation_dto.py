@@ -5,6 +5,9 @@ from app.models.conversation import Conversation
 class ConversationDTO:
     id: int
     chat_name: str
+    last_message: str
+    last_message_username: str
+    last_message_time: str
 
     @classmethod
     def from_conversation(cls, conversation: Conversation):

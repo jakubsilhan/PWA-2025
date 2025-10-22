@@ -37,7 +37,7 @@ class UserService:
             raise ValueError("Invalid password!")
         
         access_token = create_access_token(identity=str(user.id))
-        return access_token
+        return access_token, user
 
 
     def get_profiles(self, username):
@@ -46,3 +46,10 @@ class UserService:
         :returns: List[User]
         """
         return self.repository.get_by_username(username, 5)
+    
+    def get_user(self, user_id):
+        """Retrieves user by user_id
+        
+        :returns: User
+        """
+        return self.repository.get_by_id(user_id)

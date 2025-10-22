@@ -105,7 +105,7 @@ class UserController:
                                 type: object
                                 properties:
                                     message: {type: string}
-                                    token: {type: string}
+                                    username: {type: string}
                 401:
                     description: Invalid email or password
             """
@@ -114,11 +114,11 @@ class UserController:
             password = data.get("password")
 
             try:
-                token = self.service.login_user(email, password)
+                token, user = self.service.login_user(email, password)
             except ValueError as e:
-                return jsonify({"message": str(e)}), 401
+                return jsonify({"error": str(e)}), 401
 
-            response = jsonify({"message": "Login successful", "token": token})
+            response = jsonify({"message": "Login successful", "username": user.username})
 
             set_access_cookies(response, token)
 
@@ -212,6 +212,12 @@ class UserController:
                 connected_users[request.sid] = user_id
                 connected_sessions[user_id] = request.sid
 
+                # # Join rooms
+                user = self.service.get_user(user_id)
+
+                for conversation in user.conversations:
+                    join_room(conversation.id)
+
             except jwt.ExpiredSignatureError:
                 emit("auth_error", {"message": "Token expired"})
                 return disconnect()
@@ -224,3 +230,4 @@ class UserController:
             """Client disconnects from websocket"""
             user_id = connected_users.pop(request.sid, None)
             session_id = connected_sessions.pop(user_id, None)
+            print("Session disconnected: " + request.sid)

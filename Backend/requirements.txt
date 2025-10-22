@@ -8,3 +8,4 @@ flask-socketio
 bcrypt
 flask-jwt-extended
 eventlet
+gunicorn

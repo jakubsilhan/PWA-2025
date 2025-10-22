@@ -21,7 +21,11 @@ def create_app():
 
     # Allow origins
     # CORS(app)
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    CORS(app, supports_credentials=True, resources={
+    r"/*": {
+        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"]
+    }
+    })
 
     # Swagger
     swagger_template = {
@@ -47,6 +51,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 
     # JWT
+    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
     app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
