@@ -47,6 +47,19 @@ class ConversationService:
             raise ValueError("Conversation joining failed!")
         
         return conversation
+    
+    def remove_user_from_conversation(self, conversation_id, user_id) -> Conversation:
+        """Removes a user from conversation
+        
+        :returns: Conversation
+        """
+
+        conversation = self.repository.remove_user(conversation_id, user_id)
+
+        if not conversation:
+            raise ValueError("Conversation removal failed!")
+
+        return conversation
 
     def create_conversation(self, chat_name, participant_ids: list) -> Conversation:
         """Creates a conversation with specified users

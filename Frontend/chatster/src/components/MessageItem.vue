@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-import { username } from '@/stores/userStore'
+import { user } from '@/stores/userStore'
 import { computed } from 'vue'
 
 const props = defineProps({
@@ -24,7 +24,7 @@ const props = defineProps({
 })
 
 // Own message special display
-const isOwnMessage = computed(() => username.value === props.message.sender_name)
+const isOwnMessage = computed(() => user.value.username === props.message.sender_name)
 
 // Time conversions
 const formatTime = (timestamp) => {

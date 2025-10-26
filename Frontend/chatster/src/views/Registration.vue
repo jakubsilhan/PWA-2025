@@ -4,7 +4,9 @@
     <div class="bg-white shadow-xl rounded-2xl p-8 w-96">
       <h1 class="text-2xl font-bold mb-6 text-center">Registration</h1>
 
+      <!-- Registration form -->
       <form @submit.prevent="handleRegistration" class="space-y-4">
+        <!-- Email -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <input
@@ -19,6 +21,7 @@
           </p>
         </div>
 
+        <!-- Username -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
           <input
@@ -29,6 +32,7 @@
           />
         </div>
 
+        <!-- Password -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <input
@@ -47,6 +51,7 @@
           {{ loading ? 'Registering...' : 'Register' }}
         </button>
 
+        <!-- Errors and return link -->
         <p v-if="error" class="text-red-500 text-sm text-center mt-2">{{ error }}</p>
         <div class="flex items-center justify-center text-center">
           <p>

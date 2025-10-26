@@ -68,6 +68,26 @@ class ConversationRepository:
             return conversation
         return None
     
+    def remove_user(self, conversation_id, user_id):
+        """Removes a user from a conversation.
+        
+        :returns: Conversation
+        """
+        conversation = self.get_by_id(conversation_id)
+        user = db.session.get(User, user_id)
+
+        if not conversation:
+            raise ValueError("Conversation does not exist!")
+
+        if not user:
+            raise ValueError("User does not exist!")
+        
+        if user in conversation.users:
+            conversation.users.remove(user)
+            db.session.commit()
+            return conversation
+        return None
+    
     def get_users(self, conversation_id):
         """Fetches all users for conversation.
         

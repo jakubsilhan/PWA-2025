@@ -118,13 +118,14 @@ class UserController:
             except ValueError as e:
                 return jsonify({"error": str(e)}), 401
 
-            response = jsonify({"message": "Login successful", "username": user.username})
+            user_dto = UserDTO.from_user(user)
+            response = jsonify({"message": "Login successful", "user": user_dto.__dict__})
 
             set_access_cookies(response, token)
 
             return response, 200
 
-        @self.blueprint.route("/search", methods=["POST"])
+        @self.blueprint.route("/search", methods=["GET"])
         @jwt_required()
         def search_profiles():
             """
@@ -136,17 +137,10 @@ class UserController:
             security:
             - jwt: []
             parameters:
-                - in: body
-                  name: body
+                - in: query
+                  name: username
                   required: true
-                  schema:
-                    type: object
-                    properties:
-                        username:
-                            type: string
-                            description: Desired unique username.
-                    required:
-                        - username
+                  description: Desired unique username.
             responses:
                 200:
                     description: List of matching users
@@ -178,8 +172,7 @@ class UserController:
                 401:
                     description: Unauthorized (JWT missing or invalid)
             """
-            data = request.get_json(silent=True) or {}
-            username = data.get("username")
+            username = request.args.get("username")
 
             if not username:
                 return jsonify({"error": "Username is required"}), 400

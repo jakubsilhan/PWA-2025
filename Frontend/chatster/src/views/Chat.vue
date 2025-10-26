@@ -1,17 +1,20 @@
 <template>
   <div class="flex flex-col h-screen bg-gray-100">
     <div class="flex flex-row justify-between p-4 shadow-md bg-white z-10">
+      <!-- Return button -->
       <button
         @click="handleReturn"
         class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 transition"
       >
         Return
       </button>
+      <!-- Chat name -->
       <div class="flex items-center space-x-4">
         <p class="text-green-600 text-2xl font-bold align-middle">{{ conversation.chat_name }}</p>
       </div>
     </div>
 
+    <!-- Messages -->
     <div ref="messagesContainer" class="flex-1 overflow-y-auto flex flex-col">
       <div ref="topSentinel"></div>
       <ul>
@@ -20,6 +23,7 @@
       <div class="text-center p-10 italic" v-if="loading">Loading older messages...</div>
     </div>
 
+    <!-- Message sending -->
     <div class="p-5 shadow-inner bg-white z-10">
       <div class="flex flex-row space-x-2">
         <textarea

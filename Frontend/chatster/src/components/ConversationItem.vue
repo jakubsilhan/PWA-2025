@@ -5,9 +5,18 @@
     v-if="conversation"
   >
     <div class="flex justify-between items-center">
-      <span class="font-semibold">{{ conversation.chat_name }}</span>
+      <div class="flex items-center space-x-2">
+        <span class="font-semibold">{{ conversation.chat_name }}</span>
+      </div>
       <span class="text-xs text-gray-500">
         {{ formatTime(conversation.last_message_time) }}
+        <button
+          @click.stop="$emit('delete', conversation)"
+          class="text-red-500 hover:text-red-700 font-bold px-2"
+          title="Delete conversation"
+        >
+          ×
+        </button>
       </span>
     </div>
     <p class="text-gray-700 text-sm truncate">
@@ -24,7 +33,7 @@ const props = defineProps({
   conversation: {
     type: Object,
     required: true,
-    defalt: null,
+    default: null,
   },
 })
 

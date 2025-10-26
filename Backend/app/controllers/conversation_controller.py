@@ -158,7 +158,7 @@ class ConversationController:
                 conversation_dto = ConversationDTO.from_conversation(conversation).__dict__
                 sid = connected_sessions.get(new_user_id)
                 if sid:
-                    emit("new_conversation", conversation_dto, room=sid)
+                    self.socketio.emit("new_conversation", conversation_dto, room=sid)
                 return jsonify({"message": "User added successfully"}), 200
             except ValueError as e:
                 return jsonify({"error": str(e)}), 400
@@ -221,15 +221,70 @@ class ConversationController:
             for participant in participant_ids:
                 sid = connected_sessions.get(participant, None)
                 if sid:
-                    emit("new_conversation", conversation_dto, room=sid)
+                    self.socketio.emit("new_conversation", conversation_dto.__dict__, room=sid)
             return jsonify(conversation_dto), 201
         
         # TODO add these endpoints
         def rename_conversation():
             pass
 
-        def remove_user():
-            pass
+        @self.blueprint.route("/conversations/<int:conversation_id>/remove_user", methods=["POST"])
+        @jwt_required()
+        def remove_user(conversation_id):
+            """
+            Remove a user from the conversation
+            ---
+            tags:
+            - Conversation
+            summary: Remove a user from a specific conversation.
+            security:
+            - jwt: []
+            parameters:
+            - in: path
+              name: conversation_id
+              type: integer
+              required: true
+              description: The ID of the conversation to add a user to.
+            - in: body
+              name: body
+              required: true
+              schema:
+                type: object
+                properties:
+                    user_id:
+                        type: integer
+                        description: ID of the user to be removed from the conversation.
+                required:
+                    - user_id
+            responses:
+                200:
+                    description: User removed successfully.
+                400:
+                    description: Invalid input (e.g., missing user_id or user already in conversation/service error).
+                401:
+                    description: Unauthorized - Missing or invalid JWT token.
+                403:
+                    description: Access denied - Current user is not a participant in this conversation.
+            """
+            current_user_id = get_jwt_identity()
+            data = request.get_json() or {}
+            user_id = data.get("user_id")
+
+            if not user_id:
+                return jsonify({"error": "user_id is required"}), 400
+
+            if not self.service.is_user_in_conversation(current_user_id, conversation_id):
+                return jsonify({"error": "Access denied"}), 403
+
+            try:
+                conversation = self.service.remove_user_from_conversation(conversation_id, user_id)
+                conversation_dto = ConversationDTO.from_conversation(conversation)
+                sid = connected_sessions.get(user_id)
+                if current_user_id == user_id:
+                    leave_room(conversation.id)
+                return jsonify({"message": "User added successfully"}), 200
+            except ValueError as e:
+                return jsonify({"error": str(e)}), 400
 
 
     def _register_events(self):

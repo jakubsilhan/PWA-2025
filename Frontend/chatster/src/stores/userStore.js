@@ -1,11 +1,11 @@
 import { ref } from 'vue'
 
-export const username = ref('')
+export const user = ref(null)
 
-export function setUsername(newUsername) {
-  username.value = newUsername
+export function setUser(newUser) {
+  user.value = newUser
 }
 
-export function clearUsername() {
-  username.value = ''
+export function clearUser() {
+  user.value = null
 }

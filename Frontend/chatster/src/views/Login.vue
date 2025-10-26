@@ -4,7 +4,9 @@
     <div class="bg-white shadow-xl rounded-2xl p-8 w-96">
       <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
 
+      <!-- Login form -->
       <form @submit.prevent="handleLogin" class="space-y-4">
+        <!-- Email -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <input
@@ -19,6 +21,7 @@
           </p>
         </div>
 
+        <!-- Password -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <input
@@ -37,6 +40,7 @@
           {{ loading ? 'Logging in...' : 'Login' }}
         </button>
 
+        <!-- Errors and register link -->
         <p v-if="error" class="text-red-500 text-sm text-center mt-2">{{ error }}</p>
         <div class="flex items-center justify-center text-center">
           <p>
@@ -56,7 +60,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiService } from '@/utils/api'
 import { wsService } from '@/utils/websocket'
-import { setUsername } from '@/stores/userStore'
+import { setUser } from '@/stores/userStore'
 
 const router = useRouter()
 
@@ -76,7 +80,7 @@ const handleLogin = async () => {
       email: email.value,
       password: password.value,
     })
-    setUsername(data.username)
+    setUser(data.user)
     await wsService.connect()
 
     // Redirect on success
