@@ -7,5 +7,5 @@ Flask-Migrate
 flask-socketio
 bcrypt
 flask-jwt-extended
-eventlet
-gunicorn
+gevent==25.9.1
+gunicorn==23.0.0

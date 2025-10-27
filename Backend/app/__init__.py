@@ -1,3 +1,4 @@
+import gevent
 import os
 from flask import Flask
 # from flask_socketio import SocketIO
@@ -12,68 +13,66 @@ from datetime import timedelta
 load_dotenv()
 
 
-from app import models
+# def create_app():
+app = Flask(__name__)
 
-def create_app():
-    app = Flask(__name__)
+# Allow origins
+# CORS(app)
+CORS(
+app,
+supports_credentials=True,
+resources={
+    r"/*": {
+        "origins": [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173"
+            ]
+        }
+    }
+)
 
-    # Add static html files here
-
-    # Allow origins
-    # CORS(app)
-    CORS(
-    app,
-    supports_credentials=True,  # Needed for cookies / JWT headers if you use them
-    resources={
-        r"/*": {
-            "origins": [
-                "http://localhost:5173",
-                "http://127.0.0.1:5173"
-                ]
+# Swagger
+swagger_template = {
+        "swagger": "2.0",
+        "info": {
+            "title": "My API",
+            "version": "1.0.0",
+            "description": "API documentation with JWT support"
+        },
+        "securityDefinitions": {
+            "jwt": {
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header",
+                "description": "JWT Authorization header using the Bearer scheme. Example: 'Bearer <token>'"
             }
         }
-    )
+    }
 
-    # Swagger
-    swagger_template = {
-            "swagger": "2.0",
-            "info": {
-                "title": "My API",
-                "version": "1.0.0",
-                "description": "API documentation with JWT support"
-            },
-            "securityDefinitions": {
-                "jwt": {
-                    "type": "apiKey",
-                    "name": "Authorization",
-                    "in": "header",
-                    "description": "JWT Authorization header using the Bearer scheme. Example: 'Bearer <token>'"
-                }
-            }
-        }
+swagger = Swagger(app, template=swagger_template)
 
-    swagger = Swagger(app, template=swagger_template)
+# DB connection 
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 
-    # DB connection 
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+# JWT
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token_cookie"
 
-    # JWT
-    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-    app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")
-    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
-    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=7)
-    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
-    app.config["JWT_ACCESS_COOKIE_NAME"] = "access_token_cookie"
+db.init_app(app)
+migrate.init_app(app, db)
+jwt.init_app(app)
+socketio.init_app(app)
 
-    db.init_app(app)
-    migrate.init_app(app, db)
-    jwt.init_app(app)
-    socketio.init_app(app)
+message_controller = ConversationController(socketio)
+app.register_blueprint(message_controller.blueprint, url_prefix="/conversations")
 
-    message_controller = ConversationController(socketio)
-    app.register_blueprint(message_controller.blueprint, url_prefix="/conversations")
+user_controller = UserController(socketio)
+app.register_blueprint(user_controller.blueprint, url_prefix="/users")
 
-    user_controller = UserController(socketio)
-    app.register_blueprint(user_controller.blueprint, url_prefix="/users")
-
-    return app
+# return app
+# if __name__ == "__main__":
+#     socketio.run(app, host="127.0.0.1", port=5000, debug=True)

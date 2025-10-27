@@ -6,11 +6,17 @@ class WebSocketService {
   connect() {
     // Creates a websocket service with specified connection details and connects to it
     const url = import.meta.env.VITE_WS_URL
-    const path = import.meta.env.VITE_WS_PATH
+    const wsPath =
+      import.meta.env.VITE_WS_PATH !== undefined
+        ? import.meta.env.VITE_WS_PATH
+        : location.pathname.slice(0, location.pathname.lastIndexOf('/')) + '/api/socket.io'
     if (!this.socket) {
       this.socket = io(url, {
         withCredentials: true,
-        path: path,
+        // path:
+        //   import.meta.env.VITE_WS_PATH ||
+        //   location.pathname.slice(0, location.pathname.lastIndexOf('/')) + '/api/socket.io',
+        path: wsPath,
         transports: ['websocket'],
       })
 
