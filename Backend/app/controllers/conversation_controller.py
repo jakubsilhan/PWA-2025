@@ -36,19 +36,43 @@ class ConversationController:
                 401:
                     description: Unauthorized - Missing or invalid JWT token.
             """
-            user_id = int(get_jwt_identity())
-            if not user_id:
-                return jsonify({"error": "User ID is required"}), 400
+            user_id = get_jwt_identity()
             conversations = self.service.get_conversations(user_id)
             conversations_dto = list()
             for conversation in conversations:
                 try:
                     last_message = self.service.get_messages(conversation.id, 1, 0)[0]
-                    conv_dto = ConversationDTO(conversation.id, conversation.chat_name, last_message.content, last_message.sender.username, last_message.timestamp.isoformat())
+                    conv_dto = ConversationDTO(conversation.id, conversation.chat_name, last_message.content, last_message.sender.username, last_message.timestamp.isoformat(), True).__dict__
                 except IndexError:
-                    conv_dto = ConversationDTO(conversation.id, conversation.chat_name, "", "", "")
+                    conv_dto = ConversationDTO(conversation.id, conversation.chat_name, "", "", "", True).__dict__
                 conversations_dto.append(conv_dto)
             # conversations_dto = [ConversationDTO.from_conversation(conversation).__dict__ for conversation in conversations]
+            return jsonify({"conversations": conversations_dto}), 200
+        
+        @self.blueprint.route("/all_conversations", methods=["GET"])
+        @jwt_required()
+        def get_all_conversations():
+            """
+            Return a list of all conversations
+            ---
+            tags:
+                - Conversation
+            summary: Get a list of all conversations.
+            security:
+            - jwt: []
+            responses:
+                200:
+                    description: A list of conversations retrieved successfully.
+                401:
+                    description: Unauthorized - Missing or invalid JWT token.
+            """
+            user_id = get_jwt_identity()
+            conversations = self.service.get_all_conversations()
+            conversations_dto = list()
+            for conversation in conversations:
+                can_access = self.service.is_user_in_conversation(user_id, conversation.id)
+                conv_dto = ConversationDTO(conversation.id, conversation.chat_name, "", "", "", can_access).__dict__
+                conversations_dto.append(conv_dto)
             return jsonify({"conversations": conversations_dto}), 200
 
         @self.blueprint.route("/conversations/<int:conversation_id>/messages", methods=["GET"])

@@ -8,13 +8,15 @@ class ConversationDTO:
     last_message: str
     last_message_username: str
     last_message_time: str
+    can_access: bool
 
     @classmethod
     def from_conversation(cls, conversation: Conversation):
         """Create a ConversationDTO from a Conversation ORM instance"""
-        last_message = getattr(conversation, "last_message", "") or ""
-        last_message_username = getattr(conversation, "last_message_username", "") or ""
-        last_message_time = getattr(conversation, "last_message_time", "") or ""
+        last_message = ""
+        last_message_username = ""
+        last_message_time = ""
+        can_access = False
         
         return cls(
             id=conversation.id,
@@ -22,4 +24,5 @@ class ConversationDTO:
             last_message=last_message,
             last_message_username=last_message_username,
             last_message_time=last_message_time,
+            can_access = can_access
         )

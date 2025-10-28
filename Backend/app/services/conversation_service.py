@@ -13,6 +13,13 @@ class ConversationService:
         """
         return self.repository.get_by_user_id(user_id)
     
+    def get_all_conversations(self) -> list[Conversation]:
+        """Retrieves all conversations
+        
+        :returns: List[Conversation]
+        """
+        return self.repository.get_all()
+    
     def is_user_in_conversation(self, user_id, conversation_id) -> bool:
         """Checks if a user is part of conversation
         
