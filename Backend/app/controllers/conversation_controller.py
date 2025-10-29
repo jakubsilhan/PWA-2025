@@ -229,21 +229,21 @@ class ConversationController:
 
             chat_name = data.get("chat_name")
             participant_ids = data.get("participant_ids", [])
-
             if not chat_name:
                 return jsonify({"error": "chat_name is required"}), 400
 
             if user_id not in participant_ids:
-                participant_ids.append(user_id)
+                participant_ids.append(int(user_id))
+
 
             conversation = self.service.create_conversation(chat_name, participant_ids)
             try:
                 last_message = self.service.get_messages(conversation.id, 1, 0)[0]
-                conversation_dto = ConversationDTO(conversation.id, conversation.chat_name, last_message.content, last_message.sender.username, last_message.timestamp.isoformat())
+                conversation_dto = ConversationDTO(conversation.id, conversation.chat_name, last_message.content, last_message.sender.username, last_message.timestamp.isoformat(), True)
             except IndexError:
-                conversation_dto = ConversationDTO(conversation.id, conversation.chat_name, "", "", "")
+                conversation_dto = ConversationDTO(conversation.id, conversation.chat_name, "", "", "", True)
             for participant in participant_ids:
-                sid = connected_sessions.get(participant, None)
+                sid = connected_sessions.get(str(participant), None)
                 if sid:
                     self.socketio.emit("new_conversation", conversation_dto.__dict__, room=sid)
             return jsonify(conversation_dto), 201
@@ -302,7 +302,6 @@ class ConversationController:
 
             try:
                 conversation = self.service.remove_user_from_conversation(conversation_id, user_id)
-                conversation_dto = ConversationDTO.from_conversation(conversation)
                 sid = connected_sessions.get(user_id)
                 if current_user_id == user_id:
                     leave_room(conversation.id)
@@ -370,10 +369,10 @@ class ConversationController:
                 print(f"[Socket Error] send message: {e}")
                 emit("error", {"error": "Internal server error"}, room=request.sid)
 
-        @self.socketio.on("typing")
-        def typing(data):
-            """Optional: typing indicator"""
-            conversation_id = data["conversation_id"]
-            # emit("typing", ..., room=conversation_id, include_self=False)
-            pass
+        # @self.socketio.on("typing")
+        # def typing(data):
+        #     """Typing indicator"""
+        #     conversation_id = data["conversation_id"]
+        #     # emit("typing", ..., room=conversation_id, include_self=False)
+        #     pass
 

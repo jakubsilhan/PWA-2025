@@ -97,12 +97,12 @@ const handleNewConversation = (data) => {
   wsService.emit('join_conversation', { conversation_id: data.id })
 }
 
-const handleRemovedConversation = (data) => {
-  // Remove conversation
-  console.log('Removed converesation: ', data)
-  const convIndex = conversations.value.findIndex((x) => x.id == data.id)
-  conversations.value.splice(convIndex, 1)
-}
+// const handleRemovedConversation = (data) => {
+//   // Remove conversation
+//   console.log('Removed converesation: ', data)
+//   const convIndex = conversations.value.findIndex((x) => x.id == data.id)
+//   conversations.value.splice(convIndex, 1)
+// }
 
 const handleNewMessage = (data) => {
   console.log('New message received: ', data)

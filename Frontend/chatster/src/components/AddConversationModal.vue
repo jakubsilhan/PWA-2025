@@ -95,8 +95,8 @@ const searchUsers = async () => {
 // Add and remove users
 const addUser = (user) => {
   selectedUsers.value.push(user)
-  //searchResults.value = searchResults.value.filter((u) => u.id !== user.id)
-  searchResults.value = []
+  searchResults.value = searchResults.value.filter((u) => u.id !== user.id)
+  // searchResults.value = []
   userQuery.value = ''
 }
 
